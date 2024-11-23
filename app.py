@@ -408,8 +408,8 @@ def report_revenue_in_period():
         results = fetch_stored_procedure('ReportRevenueInPeriod', (date_from, date_to))
     return render_template('report_revenue_in_period.html', title="Suma wpływów z wydarzeń w danym okresie", results=results)
     
-    def main():
-        app.run(debug=True)
+def main():
+    app.run(debug=True)
 
 
 if __name__ == '__main__':
