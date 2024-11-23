@@ -68,6 +68,23 @@ def fetch_stored_procedure(proc_name, params=()):
     finally:
         cursor.close()
         connection.close()
+        
+@app.route('/check_db')
+def check_db():
+    try:
+        # Testowe połączenie z bazą danych
+        connection = create_connection()
+        if connection and connection.is_connected():
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")  # Proste zapytanie testowe
+            result = cursor.fetchone()
+            cursor.close()
+            connection.close()
+            if result:
+                return "Połączenie z bazą danych działa poprawnie!", 200
+        return "Nie udało się połączyć z bazą danych.", 500
+    except Exception as e:
+        return f"Błąd połączenia z bazą danych: {e}", 500
 
 
 @app.route('/')
