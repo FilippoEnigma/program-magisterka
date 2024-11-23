@@ -11,7 +11,7 @@ setup(
     description='Aplikacja Flask do zarządzania wydarzeniami i płatnościami.',
     author='Filip',
     author_email='your.email@example.com',
-    py_modules=['app'],  # Jeśli masz tylko `app.py`
+    py_modules=['app'],  # Zakłada, że `app.py` to główny plik aplikacji
     include_package_data=True,  # Wymaga MANIFEST.in do załączenia plików
     install_requires=[
         'flask',
@@ -26,10 +26,6 @@ setup(
         ],
     },
     package_data={
-        '': ['*.ini'],  # Uwzględnij pliki konfiguracyjne
-        'templates': ['*.html'],  # Uwzględnij wszystkie pliki HTML w templates
+        '': ['templates/*.html'],  # Uwzględnij pliki HTML w katalogu templates
     },
-    data_files=[
-        ('templates', [os.path.join('templates', f) for f in os.listdir(templates_dir) if f.endswith('.html')]),
-    ],
 )
