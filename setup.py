@@ -21,6 +21,7 @@ setup(
         ],
     },
     package_data={
-        "": ["*.ini", "templates/*.html"],  # Uwzględnij pliki konfiguracyjne i HTML
+        "": ["*.ini"],  # Uwzględnij pliki konfiguracyjne
+        "templates": ["*.html"],  # Uwzględnij wszystkie pliki HTML z folderu templates
     },
 )
