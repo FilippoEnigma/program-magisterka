@@ -6,8 +6,8 @@ setup(
     description='Aplikacja Flask do zarządzania wydarzeniami i płatnościami.',
     author='Filip',
     author_email='your.email@example.com',
-    py_modules=['app'],
-    include_package_data=True,
+    packages=find_packages(),  # Jeśli masz katalog, lepiej użyć find_packages()
+    include_package_data=True,  # Wymaga MANIFEST.in
     install_requires=[
         'flask',
         'configparser',
@@ -17,11 +17,11 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'magisterka=app:main',
+            'magisterka=app:main',  # Zmapowane na funkcję main w app.py
         ],
     },
-    packages=find_packages(),  # Użyj tego, jeśli masz strukturę katalogów jako paczki
     package_data={
-        '': ['*.ini', 'templates/*.html'],  # Uwzględnij wszystkie pliki w templates
+        '': ['*.ini'],  # Uwzględnij pliki .ini
+        'templates': ['*.html'],  # Uwzględnij pliki HTML w templates
     },
 )
