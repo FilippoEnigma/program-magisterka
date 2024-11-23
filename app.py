@@ -18,12 +18,12 @@ def load_config():
 
 def create_connection():
     try:
-        config = load_config()
+        # Bezpośrednia konfiguracja bazy danych
         connection = mysql.connector.connect(
-            host=config['database']['host'],
-            user=config['database']['user'],
-            password=config['database']['password'],
-            database=config['database']['database']
+            host="dev-mysql-primary.database.svc.cluster.local",
+            user="root",
+            password="admin",
+            database="dev_db"
         )
         if connection.is_connected():
             return connection
