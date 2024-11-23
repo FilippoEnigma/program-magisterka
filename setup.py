@@ -1,4 +1,9 @@
 from setuptools import setup
+import os
+
+# Upewnij się, że pracujesz w katalogu, w którym znajduje się setup.py
+base_dir = os.path.dirname(__file__)
+templates_dir = os.path.join(base_dir, 'templates')
 
 setup(
     name='magisterka',
@@ -24,4 +29,7 @@ setup(
         '': ['*.ini'],  # Uwzględnij pliki konfiguracyjne
         'templates': ['*.html'],  # Uwzględnij wszystkie pliki HTML w templates
     },
+    data_files=[
+        ('templates', [os.path.join('templates', f) for f in os.listdir(templates_dir) if f.endswith('.html')]),
+    ],
 )
