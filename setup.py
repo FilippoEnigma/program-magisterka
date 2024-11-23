@@ -29,6 +29,6 @@ setup(
         '': ['*.ini'],  # Uwzględnij pliki konfiguracyjne
     },
     data_files=[
-        ('magisterka/templates', [os.path.join('templates', f) for f in os.listdir(templates_dir) if f.endswith('.html')]),
+        ('templates', [os.path.join('templates', f) for f in os.listdir(templates_dir) if f.endswith('.html')]),
     ],
 )
