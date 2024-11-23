@@ -409,7 +409,7 @@ def report_revenue_in_period():
     return render_template('report_revenue_in_period.html', title="Suma wpływów z wydarzeń w danym okresie", results=results)
     
 def main():
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':
