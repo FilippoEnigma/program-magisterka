@@ -1,0 +1,210 @@
+/* General Reset */
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f9f9f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+/* Navbar */
+.navbar {
+    background-color: #007bff;
+    color: white;
+}
+
+.navbar a.nav-link {
+    color: white;
+}
+
+.navbar a.nav-link:hover {
+    text-decoration: underline;
+}
+
+/* Header Styling */
+h1, h2, h3 {
+    margin-bottom: 1.2rem;
+    color: #444;
+}
+
+h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+h2 {
+    font-size: 2rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    text-transform: uppercase;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border: none;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border: none;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #a71d2a;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border: none;
+    color: black;
+}
+
+.btn-warning:hover {
+    background-color: #d39e00;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+/* Forms */
+form {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-control {
+    border-radius: 4px;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    width: 100%;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Specific Page Styling */
+
+/* Registration Page */
+.row.justify-content-center {
+    margin-top: 2rem;
+}
+
+/* Reports List */
+.starter-template ul {
+    list-style: none;
+    padding: 0;
+}
+
+.starter-template ul li {
+    margin: 0.5rem 0;
+}
+
+.starter-template ul li a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.starter-template ul li a:hover {
+    text-decoration: underline;
+}
+
+/* Tables */
+.table {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    background-color: white;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    text-align: left;
+    border: 1px solid #ddd;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* Profile Form */
+h2 {
+    margin-bottom: 1rem;
+}
+
+.profile-form .form-group {
+    margin-bottom: 1.2rem;
+}
+
+.profile-form button {
+    margin-top: 1rem;
+}
+
+/* Containers */
+.container {
+    max-width: 960px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Alerts */
+.alert {
+    padding: 0.75rem 1.25rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+/* Misc */
+.starter-template {
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
