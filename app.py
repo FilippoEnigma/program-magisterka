@@ -6,7 +6,7 @@ from mysql.connector import Error
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from decimal import Decimal
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='/usr/local/templates')
 app.secret_key = 'your_secret_key'
 
 
