@@ -8,6 +8,7 @@ setup(
     author_email='your.email@example.com',
     py_modules=['app'],  # Uwzględnij pojedyncze moduły jak app.py
     include_package_data=True,  # Uwzględnia dane statyczne i pliki z MANIFEST.in
+    packages=find_packages(),
     install_requires=[
         'flask',
         'configparser',
