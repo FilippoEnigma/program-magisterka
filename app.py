@@ -18,12 +18,11 @@ def load_config():
 
 def create_connection():
     try:
-        config = load_config()
         connection = mysql.connector.connect(
-            host=config['database']['host'],
-            user=config['database']['user'],
-            password=config['database']['password'],
-            database=config['database']['database']
+            host="dev-mysql-primary.database.svc.cluster.local",
+            user="root",
+            password="admin",
+            database="dev_db"
         )
         if connection.is_connected():
             return connection
@@ -68,7 +67,7 @@ def fetch_stored_procedure(proc_name, params=()):
     finally:
         cursor.close()
         connection.close()
-
+        
 @app.route('/check_db')
 def check_db():
     try:
@@ -85,6 +84,7 @@ def check_db():
         return "Nie udało się połączyć z bazą danych.", 500
     except Exception as e:
         return f"Błąd połączenia z bazą danych: {e}", 500
+
 
 @app.route('/')
 def index():
