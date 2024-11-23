@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='magisterka',
-    version='1.0.7',
+    version='1.0.0',
     description='Aplikacja Flask do zarządzania wydarzeniami i płatnościami.',
     author='Filip',
     author_email='your.email@example.com',
