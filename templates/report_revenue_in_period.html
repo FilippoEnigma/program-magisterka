@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+    <div class="starter-template">
+        <h1>{{ title }}</h1>
+        <form method="POST">
+            <div class="form-group">
+                <label for="date_from">Data od:</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" required>
+            </div>
+            <div class="form-group">
+                <label for="date_to">Data do:</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Generate Report</button>
+        </form>
+
+        {% if results %}
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>SumaWplywow</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in results %}
+                        <tr>
+                            <td>{{ row.SumaWplywow }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+{% endblock %}

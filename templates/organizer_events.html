@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Manage Events{% endblock %}
+{% block content %}
+<h2>Manage Events</h2>
+<form method="POST" action="{{ url_for('organizer_events') }}">
+    <input type="hidden" name="action" value="add">
+    <div class="form-group">
+        <label for="nazwa">Nazwa wydarzenia:</label>
+        <input type="text" class="form-control" id="nazwa" name="nazwa" required>
+    </div>
+    <div class="form-group">
+        <label for="data">Data:</label>
+        <input type="date" class="form-control" id="data" name="data" required>
+    </div>
+    <div class="form-group">
+        <label for="miejsce_id">Miejsce:</label>
+        <select class="form-control" id="miejsce_id" name="miejsce_id" required>
+            {% for location in locations %}
+                <option value="{{ location.LocationID }}">{{ location.Miasto }} - {{ location.Adres }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="opis">Opis:</label>
+        <textarea class="form-control" id="opis" name="opis" required></textarea>
+    </div>
+    <div class="form-group">
+        <label for="limit_miejsc">Limit miejsc:</label>
+        <input type="number" class="form-control" id="limit_miejsc" name="limit_miejsc" required>
+    </div>
+    <div class="form-group">
+        <label for="cena">Cena:</label>
+        <input type="number" class="form-control" id="cena" name="cena" step="0.01" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Event</button>
+</form>
+
+<h3>Existing Events</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nazwa wydarzenia</th>
+            <th>Data</th>
+            <th>Miasto</th>
+            <th>Opis</th>
+            <th>Limit miejsc</th>
+            <th>Cena</th>
+            <th>Akcje</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+            <tr>
+                <td>{{ event.NazwaWydarzenia }}</td>
+                <td>{{ event.Data }}</td>
+                <td>{{ event.Miasto }}</td>
+                <td>{{ event.Opis }}</td>
+                <td>{{ event.LimitMiejsc }}</td>
+                <td>{{ event.Cena }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('organizer_events') }}" style="display:inline;">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="event_id" value="{{ event.EventID }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                    <button class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#updateEventModal{{ event.EventID }}">Update</button>
+
+                    <!-- Update Event Modal -->
+                    <div class="modal fade" id="updateEventModal{{ event.EventID }}" tabindex="-1" role="dialog" aria-labelledby="updateEventModalLabel" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="updateEventModalLabel">Update Event</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <form method="POST" action="{{ url_for('organizer_events') }}">
+                                        <input type="hidden" name="action" value="update">
+                                        <input type="hidden" name="event_id" value="{{ event.EventID }}">
+                                        <div class="form-group">
+                                            <label for="nazwa">Nazwa wydarzenia:</label>
+                                            <input type="text" class="form-control" id="nazwa" name="nazwa" value="{{ event.NazwaWydarzenia }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="data">Data:</label>
+                                            <input type="date" class="form-control" id="data" name="data" value="{{ event.Data }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="miejsce_id">Miejsce:</label>
+                                            <select class="form-control" id="miejsce_id" name="miejsce_id" required>
+                                                {% for location in locations %}
+                                                    <option value="{{ location.LocationID }}" {% if location.LocationID == event.MiejsceID %}selected{% endif %}>{{ location.Miasto }} - {{ location.Adres }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="opis">Opis:</label>
+                                            <textarea class="form-control" id="opis" name="opis" required>{{ event.Opis }}</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="limit_miejsc">Limit miejsc:</label>
+                                            <input type="number" class="form-control" id="limit_miejsc" name="limit_miejsc" value="{{ event.LimitMiejsc }}" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="cena">Cena:</label>
+                                            <input type="number" class="form-control" id="cena" name="cena" step="0.01" value="{{ event.Cena }}" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Update Event</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Events</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div>
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <h1>Manage Events</h1>
+
+        <form method="post">
+            <div class="form-group">
+                <label for="nazwa">Nazwa:</label>
+                <input type="text" id="nazwa" name="nazwa" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="data">Data:</label>
+                <input type="date" id="data" name="data" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="miejsce_id">Miejsce ID:</label>
+                <select id="miejsce_id" name="miejsce_id" class="form-control">
+                    {% for location in locations %}
+                        <option value="{{ location.LocationID }}">{{ location.Miasto }} - {{ location.Adres }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="opis">Opis:</label>
+                <textarea id="opis" name="opis" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="limit_miejsc">Limit miejsc:</label>
+                <input type="number" id="limit_miejsc" name="limit_miejsc" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="cena">Cena:</label>
+                <input type="number" step="0.01" id="cena" name="cena" class="form-control">
+            </div>
+            <input type="hidden" id="action" name="action" value="add">
+            <button type="submit" class="btn btn-primary">Add Event</button>
+        </form>
+
+        <h2>Existing Events</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nazwa</th>
+                    <th>Data</th>
+                    <th>Miejsce</th>
+                    <th>Opis</th>
+                    <th>Limit miejsc</th>
+                    <th>Cena</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in events %}
+                    <tr>
+                        <td>{{ event.EventID }}</td>
+                        <td>{{ event.NazwaWydarzenia }}</td>
+                        <td>{{ event.Data }}</td>
+                        <td>{{ event.MiejsceID }}</td>
+                        <td>{{ event.Opis }}</td>
+                        <td>{{ event.LimitMiejsc }}</td>
+                        <td>{{ event.Cena }}</td>
+                        <td>
+                            <form method="post" style="display: inline-block;">
+                                <input type="hidden" name="event_id" value="{{ event.EventID }}">
+                                <input type="hidden" name="action" value="delete">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                            <form method="post" style="display: inline-block;">
+                                <input type="hidden" name="event_id" value="{{ event.EventID }}">
+                                <input type="hidden" name="nazwa" value="{{ event.NazwaWydarzenia }}">
+                                <input type="hidden" name="data" value="{{ event.Data }}">
+                                <input type="hidden" name="miejsce_id" value="{{ event.MiejsceID }}">
+                                <input type="hidden" name="opis" value="{{ event.Opis }}">
+                                <input type="hidden" name="limit_miejsc" value="{{ event.LimitMiejsc }}">
+                                <input type="hidden" name="cena" value="{{ event.Cena }}">
+                                <input type="hidden" name="action" value="update">
+                                <button type="submit" class="btn btn-warning">Update</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

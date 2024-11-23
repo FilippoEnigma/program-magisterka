@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Book Event{% endblock %}
+{% block content %}
+<h2>Book Event</h2>
+<form method="POST" action="{{ url_for('book_event') }}">
+    <div class="form-group">
+        <label for="event_id">Wydarzenie:</label>
+        <select class="form-control" id="event_id" name="event_id">
+            {% for event in events %}
+                <option value="{{ event.EventID }}">{{ event.NazwaWydarzenia }} - {{ event.Data }} - Cena: {{ event.Cena }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="znizka_id">Znizka ID (opcjonalne):</label>
+        <input type="text" class="form-control" id="znizka_id" name="znizka_id">
+    </div>
+    <button type="submit" class="btn btn-primary">Book</button>
+</form>
+{% endblock %}

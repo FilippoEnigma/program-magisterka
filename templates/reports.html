@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+    <div class="starter-template">
+        <h1>Reports</h1>
+        <ul>
+            <li><a href="{{ url_for('report_events_per_category') }}">Liczba wydarzeń w poszczególnych kategoriach</a></li>
+            <li><a href="{{ url_for('report_average_rating_per_category') }}">Średnia ocena wydarzeń w poszczególnych kategoriach</a></li>
+            <li><a href="{{ url_for('report_top_selling_events') }}">Najczęściej kupowane bilety w poszczególnych kategoriach</a></li>
+            <li><a href="{{ url_for('report_most_rated_events') }}">Najczęściej oceniane wydarzenia</a></li>
+            <li><a href="{{ url_for('report_event_revenue') }}">Suma wpływów z poszczególnych wydarzeń</a></li>
+            <li><a href="{{ url_for('report_revenue_in_period') }}">Suma wpływów z wydarzeń w danym okresie</a></li>
+        </ul>
+    </div>
+{% endblock %}
