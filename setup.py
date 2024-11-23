@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='magisterka',
@@ -6,8 +6,8 @@ setup(
     description='Aplikacja Flask do zarządzania wydarzeniami i płatnościami.',
     author='Filip',
     author_email='your.email@example.com',
-    packages=find_packages(),  # Jeśli masz katalog, lepiej użyć find_packages()
-    include_package_data=True,  # Wymaga MANIFEST.in
+    py_modules=['app'],  # Jeśli masz tylko `app.py`
+    include_package_data=True,  # Wymaga MANIFEST.in do załączenia plików
     install_requires=[
         'flask',
         'configparser',
@@ -21,7 +21,7 @@ setup(
         ],
     },
     package_data={
-        '': ['*.ini'],  # Uwzględnij pliki .ini
-        'templates': ['*.html'],  # Uwzględnij pliki HTML w templates
+        '': ['*.ini'],  # Uwzględnij pliki konfiguracyjne
+        'templates': ['*.html'],  # Uwzględnij wszystkie pliki HTML w templates
     },
 )
