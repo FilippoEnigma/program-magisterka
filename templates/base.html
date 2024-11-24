@@ -15,8 +15,12 @@
                 {% if 'user' in session %}
                     {% if session['user']['Rola'] == 'klient' %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('book_event') }}">Book Event</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('filter_events') }}">Filter Events</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('make_payment') }}">Make Payment</a></li>
+                        {% if 'filter_events' in current_app.url_map._rules_by_endpoint %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('filter_events') }}">Filter Events</a></li>
+                        {% endif %}
+                        {% if 'make_payment' in current_app.url_map._rules_by_endpoint %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('make_payment') }}">Make Payment</a></li>
+                        {% endif %}
                     {% elif session['user']['Rola'] == 'organizator' %}
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('organizer_dashboard') }}">Organizer Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('organizer_events') }}">Manage Events</a></li>
@@ -45,7 +49,4 @@
         {% block content %}{% endblock %}
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd
