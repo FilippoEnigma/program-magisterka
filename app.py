@@ -320,8 +320,12 @@ def make_payment():
         metoda_platnosci = request.form['metoda_platnosci']
 
         # Pobierz szczegóły użytkownika
-        user_details = fetch_stored_procedure('GetUserDetails', (user_id,))[0]
-        birth_date = user_details['DataUrodzenia']
+        user_details = fetch_stored_procedure('GetUserDetails', (user_id,))
+        if not user_details:
+            flash("Nie znaleziono szczegółów użytkownika", 'danger')
+            return redirect(url_for('make_payment'))
+
+        birth_date = user_details[0]['DataUrodzenia']
 
         # Oblicz cenę ze zniżką
         final_price = calculate_discounted_price(kwota, birth_date)
@@ -339,8 +343,11 @@ def make_payment():
     tickets = fetch_stored_procedure('GetTicketsByUser', (user_id,))
 
     # Pobierz szczegóły użytkownika
-    user_details = fetch_stored_procedure('GetUserDetails', (user_id,))[0]
-    birth_date = user_details['DataUrodzenia']
+    user_details = fetch_stored_procedure('GetUserDetails', (user_id,))
+    if not user_details:
+        flash("Nie znaleziono szczegółów użytkownika", 'danger')
+        return redirect(url_for('book_event'))
+    birth_date = user_details[0]['DataUrodzenia']
 
     # Obliczanie cen ze zniżką
     for ticket in tickets:
