@@ -36,16 +36,20 @@ def execute_stored_procedure(proc_name, params=()):
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return
+    cursor = None
     try:
         cursor = connection.cursor()
         cursor.callproc(proc_name, params)
         connection.commit()
-    except Error as e:
-        print(f"Error executing stored procedure {proc_name}: {e}")
-        flash(f"Wystąpił błąd podczas wykonywania operacji. Szczegóły: {e}", 'danger')
+    except mysql.connector.Error as e:
+        print(f"Błąd SQL [{e.errno}]: {e.msg}")
+        flash(f"Wystąpił błąd podczas wykonywania procedury {proc_name}. Szczegóły: {e.msg}", 'danger')
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 
 
 def fetch_stored_procedure(proc_name, params=()):
@@ -53,20 +57,24 @@ def fetch_stored_procedure(proc_name, params=()):
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return []
+    cursor = None
     try:
         cursor = connection.cursor(dictionary=True)
         cursor.callproc(proc_name, params)
-        result = []
-        for res in cursor.stored_results():
-            result.extend(res.fetchall())
-        return result
-    except Error as e:
-        print(f"Error fetching stored procedure {proc_name}: {e}")
-        flash("Wystąpił błąd podczas pobierania danych.", 'danger')
+        results = []
+        for result in cursor.stored_results():
+            results.extend(result.fetchall())
+        return results
+    except mysql.connector.Error as e:
+        print(f"Błąd SQL [{e.errno}]: {e.msg}")
+        flash(f"Wystąpił błąd podczas pobierania danych z procedury {proc_name}. Szczegóły: {e.msg}", 'danger')
         return []
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
         
 @app.route('/check_db')
 def check_db():
@@ -297,10 +305,18 @@ def book_event():
 
 
 def calculate_discounted_price(price, birth_date):
-    today = datetime.today()
-    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-    discount = Decimal('0.2') if age < 25 or age > 70 else Decimal('0')
-    return price * (Decimal('1') - discount)
+    if birth_date is None:
+        flash("Data urodzenia użytkownika jest nieznana. Zniżka nie zostanie zastosowana.", 'warning')
+        return price
+    try:
+        today = datetime.today()
+        age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+        discount = Decimal('0.2') if age < 25 or age > 70 else Decimal('0')
+        return price * (Decimal('1') - discount)
+    except Exception as e:
+        print(f"Błąd podczas obliczania zniżki: {e}")
+        return price
+
 
 
 @app.route('/make_payment', methods=['GET', 'POST'])
@@ -311,57 +327,46 @@ def make_payment():
 
     if request.method == 'POST':
         user_id = session['user']['UserID']
-        ticket_id = request.form['ticket_id']
-        try:
-            kwota = Decimal(request.form['kwota'])
-        except decimal.InvalidOperation:
-            flash("Nieprawidłowa wartość kwoty", 'danger')
+        ticket_id = request.form.get('ticket_id')
+        kwota_raw = request.form.get('kwota')
+        metoda_platnosci = request.form.get('metoda_platnosci')
+
+        # Walidacja danych wejściowych
+        if not user_id or not ticket_id or not kwota_raw or not metoda_platnosci:
+            flash("Wszystkie pola są wymagane.", 'danger')
             return redirect(url_for('make_payment'))
-        metoda_platnosci = request.form['metoda_platnosci']
+
+        try:
+            kwota = Decimal(kwota_raw)
+        except decimal.InvalidOperation:
+            flash("Nieprawidłowa wartość kwoty.", 'danger')
+            return redirect(url_for('make_payment'))
 
         # Pobierz szczegóły użytkownika
         user_details = fetch_stored_procedure('GetUserDetails', (user_id,))
-        if not user_details:
-            flash("Nie znaleziono szczegółów użytkownika", 'danger')
+        if not user_details or 'DataUrodzenia' not in user_details[0]:
+            flash("Nie znaleziono szczegółów użytkownika lub brakuje daty urodzenia.", 'danger')
             return redirect(url_for('make_payment'))
 
         birth_date = user_details[0]['DataUrodzenia']
-
-        # Oblicz cenę ze zniżką
         final_price = calculate_discounted_price(kwota, birth_date)
 
         try:
             execute_stored_procedure('MakePayment', (user_id, ticket_id, final_price, metoda_platnosci))
-            flash("Płatność zakończona pomyślnie", 'success')
+            flash("Płatność zakończona pomyślnie.", 'success')
         except Exception as e:
-            print(f"Error: {e}")
-            flash(f"Wystąpił błąd podczas wykonywania płatności. Szczegóły: {e}", 'danger')
+            print(f"Błąd podczas płatności: {e}")
+            flash(f"Wystąpił błąd podczas płatności. Szczegóły: {e}", 'danger')
         return redirect(url_for('book_event'))
 
-    # Pobieranie biletów dla zalogowanego użytkownika
+    # Pobranie biletów dla użytkownika
     user_id = session['user']['UserID']
     tickets = fetch_stored_procedure('GetTicketsByUser', (user_id,))
-
-    # Pobierz szczegóły użytkownika
-    user_details = fetch_stored_procedure('GetUserDetails', (user_id,))
-    if not user_details:
-        flash("Nie znaleziono szczegółów użytkownika", 'danger')
-        return redirect(url_for('book_event'))
-    birth_date = user_details[0]['DataUrodzenia']
-
-    # Obliczanie cen ze zniżką
-    for ticket in tickets:
-        if ticket['Cena'] is not None:
-            try:
-                ticket['FinalPrice'] = calculate_discounted_price(Decimal(ticket['Cena']), birth_date)
-            except Exception as e:
-                print(f"Error calculating discounted price for ticket {ticket['TicketID']}: {e}")
-                ticket['FinalPrice'] = ticket['Cena']
-        else:
-            print(f"Warning: Ticket {ticket['TicketID']} has no price set (Cena is None).")
-            ticket['FinalPrice'] = 'Brak ceny'
+    if not tickets:
+        flash("Nie znaleziono biletów dla tego użytkownika.", 'warning')
 
     return render_template('make_payment.html', tickets=tickets)
+
 
 
 @app.route('/filter_events', methods=['GET', 'POST'])
@@ -369,22 +374,33 @@ def filter_events():
     if 'user' not in session or session['user']['Rola'] != 'klient':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
+
     events = []
     if request.method == 'POST':
-        category = request.form['category']
-        city = request.form['city']
-        country = request.form['country']
-        date_from = request.form['date_from']
-        date_to = request.form['date_to']
-        capacity_min = request.form['capacity_min']
-        capacity_max = request.form['capacity_max']
-        seat_type = request.form['seat_type']
-        price_min = request.form['price_min']
-        price_max = request.form['price_max']
-        available_only = request.form.get('available_only')
-        events = fetch_stored_procedure('FilterEvents', (category, f"%{city}%", f"%{country}%", date_from, date_to, capacity_min, capacity_max, f"%{seat_type}%", price_min, price_max, available_only))
+        try:
+            category = request.form.get('category') or None
+            city = request.form.get('city') or None
+            country = request.form.get('country') or None
+            date_from = request.form.get('date_from') or None
+            date_to = request.form.get('date_to') or None
+            capacity_min = int(request.form.get('capacity_min')) if request.form.get('capacity_min') else None
+            capacity_max = int(request.form.get('capacity_max')) if request.form.get('capacity_max') else None
+            seat_type = request.form.get('seat_type') or None
+            price_min = Decimal(request.form.get('price_min')) if request.form.get('price_min') else None
+            price_max = Decimal(request.form.get('price_max')) if request.form.get('price_max') else None
+            available_only = request.form.get('available_only') == 'on'
+
+            events = fetch_stored_procedure('FilterEvents', (
+                category, f"%{city}%", f"%{country}%", date_from, date_to,
+                capacity_min, capacity_max, f"%{seat_type}%", price_min, price_max, available_only
+            ))
+        except Exception as e:
+            print(f"Błąd podczas filtrowania wydarzeń: {e}")
+            flash("Wystąpił błąd podczas filtrowania wydarzeń.", 'danger')
+
     categories = fetch_stored_procedure('GetCategories')
     return render_template('filter_events.html', events=events, categories=categories)
+
 
 
 @app.route('/reports')
