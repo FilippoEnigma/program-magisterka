@@ -131,6 +131,18 @@ def register():
             flash("Wystąpił błąd podczas rejestracji.", 'danger')
     return render_template('register.html')
 
+@app.route('/make_payment', methods=['GET', 'POST'])
+def make_payment():
+    if 'user' not in session or session['user']['Rola'] != 'klient':
+        flash("Brak dostępu. Musisz być zalogowany jako klient.", 'danger')
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        # Implement payment logic here
+        flash("Płatność została zrealizowana pomyślnie.", 'success')
+        return redirect(url_for('index'))
+
+    return render_template('make_payment.html')
 
 # Manage events (admin functionality)
 @app.route('/manage_events', methods=['GET', 'POST'])
