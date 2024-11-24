@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, current_app
 import mysql.connector
 from decimal import Decimal
 from datetime import datetime
@@ -6,6 +6,9 @@ from datetime import datetime
 app = Flask(__name__, template_folder='/usr/local/templates')
 app.secret_key = 'your_secret_key'
 
+@app.context_processor
+def inject_current_app():
+    return dict(current_app=current_app)
 
 # Helper functions for database operations
 def create_connection():
