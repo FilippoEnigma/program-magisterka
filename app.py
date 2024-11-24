@@ -184,32 +184,30 @@ def manage_events():
     return render_template('manage_events.html', events=events, locations=locations, categories=categories)
 
 
-# Booking events
 @app.route('/book_event', methods=['GET', 'POST'])
 def book_event():
-    # Upewnij się, że użytkownik jest zalogowany i ma odpowiednią rolę
+    # Sprawdzanie uprawnień
     if 'user' not in session or session['user']['Rola'] != 'klient':
         flash("Brak dostępu. Musisz być zalogowany jako klient.", 'danger')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        # Pobierz dane użytkownika i wydarzenia z formularza
+        # Pobierz dane z formularza
         user_id = session['user']['UserID']
         event_id = request.form.get('event_id')
 
-        # Sprawdź dostępność miejsc na wydarzenie
+        # Sprawdź dostępność miejsc
         event = fetch_query("SELECT LimitMiejsc FROM Events WHERE EventID = %s", (event_id,))
         if event:
             available_seats = event[0]['LimitMiejsc']
             if available_seats > 0:
-                # Dodaj rezerwację do bazy danych
-                status = 'aktywny'
+                # Dodaj rezerwację
                 query_booking = """
                     INSERT INTO Bookings (UserID, EventID, Status)
-                    VALUES (%s, %s, %s)
+                    VALUES (%s, %s, 'aktywny')
                 """
-                if execute_query(query_booking, (user_id, event_id, status)):
-                    # Zmniejsz limit miejsc na wydarzeniu
+                if execute_query(query_booking, (user_id, event_id)):
+                    # Zmniejsz liczbę miejsc
                     query_update_seats = "UPDATE Events SET LimitMiejsc = LimitMiejsc - 1 WHERE EventID = %s"
                     execute_query(query_update_seats, (event_id,))
                     flash("Zarezerwowano pomyślnie.", 'success')
@@ -220,7 +218,7 @@ def book_event():
         else:
             flash("Nie znaleziono wybranego wydarzenia.", 'danger')
 
-    # Pobierz dostępne wydarzenia (te, które mają wolne miejsca)
+    # Pobierz dostępne wydarzenia
     events = fetch_query("SELECT * FROM Events WHERE LimitMiejsc > 0")
     return render_template('book_event.html', events=events)
 
