@@ -3,7 +3,7 @@ from datetime import datetime
 import configparser
 import mysql.connector
 from mysql.connector import Error
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, current_app
 from decimal import Decimal
 
 app = Flask(__name__, template_folder='/usr/local/templates')
