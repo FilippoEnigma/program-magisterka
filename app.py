@@ -77,7 +77,10 @@ def fetch_query(query, params=()):
         if connection:
             connection.close()
 
-
+@app.context_processor
+def inject_current_app():
+    return dict(current_app=current_app)
+    
 @app.route('/check_db')
 def check_db():
     try:
