@@ -17,10 +17,10 @@ def load_config():
 def create_connection():
     try:
         connection = mysql.connector.connect(
-            host="dev-mysql-primary.database.svc.cluster.local",
+            host="gogs-mysql-primary.database.svc.cluster.local",
             user="root",
             password="admin",
-            database="dev_db"
+            database="test_db"
         )
         if connection.is_connected():
             return connection
