@@ -9,12 +9,10 @@ from decimal import Decimal
 app = Flask(__name__, template_folder='/usr/local/templates')
 app.secret_key = 'your_secret_key'
 
-
 def load_config():
     config = configparser.ConfigParser()
     config.read('config.ini')
     return config
-
 
 def create_connection():
     try:
@@ -32,7 +30,6 @@ def create_connection():
     except Error as e:
         print(f"Błąd podczas łączenia z MySQL: {e}")
         return None
-
 
 def execute_query(query, params=()):
     connection = create_connection()
@@ -55,7 +52,6 @@ def execute_query(query, params=()):
         if connection:
             connection.close()
 
-
 def fetch_query(query, params=()):
     connection = create_connection()
     if connection is None:
@@ -77,10 +73,11 @@ def fetch_query(query, params=()):
         if connection:
             connection.close()
 
+# Dodajemy current_app do kontekstu szablonu
 @app.context_processor
 def inject_current_app():
     return dict(current_app=current_app)
-    
+
 @app.route('/check_db')
 def check_db():
     try:
@@ -97,16 +94,13 @@ def check_db():
     except Exception as e:
         return f"Błąd połączenia z bazą danych: {e}", 500
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
 
-
 def fetch_user_by_email_and_password(email, password):
     query = "SELECT * FROM users WHERE Email = %s AND Haslo = %s"
     return fetch_query(query, (email, password))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -122,19 +116,16 @@ def login():
             flash("Nieprawidłowy email lub hasło", 'danger')
     return render_template('login.html')
 
-
 @app.route('/logout')
 def logout():
     session.pop('user', None)
     flash("Wylogowano pomyślnie", 'success')
     return redirect(url_for('index'))
 
-
 def add_user(imie, nazwisko, email, haslo, rola, data_urodzenia):
     query = """INSERT INTO users (Imie, Nazwisko, Email, Haslo, Rola, DataUrodzenia) 
                VALUES (%s, %s, %s, %s, %s, %s)"""
     return execute_query(query, (imie, nazwisko, email, haslo, rola, data_urodzenia))
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -158,7 +149,6 @@ def register():
                 flash(f"Wystąpił błąd podczas rejestracji. Szczegóły: {e}", 'danger')
 
     return render_template('register.html')
-
 
 def add_event_with_check(nazwa, data, miejsce_id, opis, limit_miejsc, cena, organizer_id):
     connection = create_connection()
@@ -190,32 +180,26 @@ def add_event_with_check(nazwa, data, miejsce_id, opis, limit_miejsc, cena, orga
         if connection:
             connection.close()
 
-
 def delete_event(event_id):
     query = "DELETE FROM events WHERE EventID = %s"
     return execute_query(query, (event_id,))
-
 
 def update_event(event_id, nazwa, data, miejsce_id, opis, limit_miejsc, cena):
     query = """UPDATE events SET NazwaWydarzenia = %s, Data = %s, MiejsceID = %s, Opis = %s, 
                LimitMiejsc = %s, Cena = %s WHERE EventID = %s"""
     return execute_query(query, (nazwa, data, miejsce_id, opis, limit_miejsc, cena, event_id))
 
-
 def get_events():
     query = "SELECT * FROM events"
     return fetch_query(query)
-
 
 def get_locations():
     query = "SELECT * FROM location"
     return fetch_query(query)
 
-
 def get_categories():
     query = "SELECT * FROM eventcategories"
     return fetch_query(query)
-
 
 @app.route('/manage_events', methods=['GET', 'POST'])
 def manage_events():
@@ -262,14 +246,12 @@ def manage_events():
     categories = get_categories()
     return render_template('manage_events.html', events=events, locations=locations, categories=categories)
 
-
 @app.route('/organizer_dashboard')
 def organizer_dashboard():
     if 'user' not in session or session['user']['Rola'] != 'organizator':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
     return render_template('organizer_dashboard.html')
-
 
 @app.route('/organizer_events', methods=['GET', 'POST'])
 def organizer_events():
@@ -316,14 +298,12 @@ def organizer_events():
     categories = get_categories()
     return render_template('organizer_events.html', events=events, locations=locations, categories=categories)
 
-
 def get_bookings_by_organizer(organizer_id):
     query = """SELECT T.TicketID, T.UserID, T.EventID, T.DataZakupu, T.Status
                FROM tickets T
                JOIN events E ON T.EventID = E.EventID
                WHERE E.OrganizerID = %s"""
     return fetch_query(query, (organizer_id,))
-
 
 @app.route('/organizer_bookings')
 def organizer_bookings():
@@ -338,18 +318,15 @@ def organizer_bookings():
         flash(f"Wystąpił błąd podczas pobierania danych. Szczegóły: {e}", 'danger')
         return render_template('organizer_bookings.html', bookings=[])
 
-
 def get_user_by_id(user_id):
     query = "SELECT * FROM users WHERE UserID = %s"
     result = fetch_query(query, (user_id,))
     return result[0] if result else None
 
-
 def update_user(user_id, imie, nazwisko, email, haslo):
     query = """UPDATE users SET Imie = %s, Nazwisko = %s, Email = %s, Haslo = %s
                WHERE UserID = %s"""
     return execute_query(query, (imie, nazwisko, email, haslo, user_id))
-
 
 @app.route('/organizer_profile', methods=['GET', 'POST'])
 def organizer_profile():
@@ -370,24 +347,20 @@ def organizer_profile():
             return redirect(url_for('organizer_dashboard'))
     return render_template('organizer_profile.html', user=user)
 
-
 def get_user_details(user_id):
     query = "SELECT UserID, Imie, Nazwisko, Email, DataUrodzenia FROM users WHERE UserID = %s"
     result = fetch_query(query, (user_id,))
     return result[0] if result else None
-
 
 def get_event_price(event_id):
     query = "SELECT Cena FROM events WHERE EventID = %s"
     result = fetch_query(query, (event_id,))
     return result[0]['Cena'] if result else None
 
-
 def insert_ticket(user_id, event_id, status, znizka_id, final_price):
     query = """INSERT INTO tickets (UserID, EventID, DataZakupu, Status, ZnizkaID, FinalPrice)
                VALUES (%s, %s, NOW(), %s, %s, %s)"""
     return execute_query(query, (user_id, event_id, status, znizka_id, final_price))
-
 
 @app.route('/book_event', methods=['GET', 'POST'])
 def book_event():
@@ -421,30 +394,25 @@ def book_event():
                 flash(f"Wystąpił błąd podczas wykonywania operacji. Szczegóły: {e}", 'danger')
     return render_template('book_event.html', events=events)
 
-
 def calculate_discounted_price(price, birth_date):
     today = datetime.today()
     age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
     discount = Decimal('0.2') if age < 25 or age > 70 else Decimal('0')
     return price * (Decimal('1') - discount)
 
-
 def get_ticket_final_price(ticket_id):
     query = "SELECT FinalPrice FROM tickets WHERE TicketID = %s"
     result = fetch_query(query, (ticket_id,))
     return result[0]['FinalPrice'] if result else None
-
 
 def make_payment(user_id, ticket_id, kwota, metoda_platnosci):
     query = """INSERT INTO payments (UserID, TicketID, Kwota, DataPlatnosci, MetodaPlatnosci)
                VALUES (%s, %s, %s, NOW(), %s)"""
     return execute_query(query, (user_id, ticket_id, kwota, metoda_platnosci))
 
-
 def update_ticket_status(ticket_id, status):
     query = "UPDATE tickets SET Status = %s WHERE TicketID = %s"
     return execute_query(query, (status, ticket_id))
-
 
 def get_tickets_by_user(user_id):
     query = """SELECT T.TicketID, E.NazwaWydarzenia, E.Data, E.Cena, T.FinalPrice
@@ -453,9 +421,8 @@ def get_tickets_by_user(user_id):
                WHERE T.UserID = %s"""
     return fetch_query(query, (user_id,))
 
-
 @app.route('/make_payment', methods=['GET', 'POST'])
-def make_payment_route():
+def make_payment():
     if 'user' not in session or session['user']['Rola'] != 'klient':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
@@ -484,7 +451,6 @@ def make_payment_route():
 
     return render_template('make_payment.html', tickets=tickets)
 
-
 def filter_events(category, city, country, date_from, date_to, capacity_min, capacity_max, seat_type, price_min, price_max, available_only):
     query = """
     SELECT E.NazwaWydarzenia, E.Data, L.Miasto, L.Kraj, L.Pojemnosc, L.RodzajMiejsc, E.Opis, E.Cena, 
@@ -501,7 +467,6 @@ def filter_events(category, city, country, date_from, date_to, capacity_min, cap
     HAVING (DostepneMiejsca > 0 OR %s = 0);
     """
     return fetch_query(query, (category, city, country, date_from, date_to, capacity_min, capacity_max, seat_type, price_min, price_max, available_only))
-
 
 @app.route('/filter_events', methods=['GET', 'POST'])
 def filter_events_route():
@@ -525,11 +490,9 @@ def filter_events_route():
     categories = get_categories()
     return render_template('filter_events.html', events=events, categories=categories)
 
-
 @app.route('/reports')
 def reports():
     return render_template('reports.html')
-
 
 def report_events_per_category():
     query = """
@@ -540,12 +503,10 @@ def report_events_per_category():
     """
     return fetch_query(query)
 
-
 @app.route('/report/events_per_category')
 def report_events_per_category_route():
     results = report_events_per_category()
     return render_template('report.html', title="Liczba wydarzeń w poszczególnych kategoriach", results=results)
-
 
 def report_average_rating_per_category():
     query = """
@@ -558,12 +519,10 @@ def report_average_rating_per_category():
     """
     return fetch_query(query)
 
-
 @app.route('/report/average_rating_per_category')
 def report_average_rating_per_category_route():
     results = report_average_rating_per_category()
     return render_template('report.html', title="Średnia ocena wydarzeń w poszczególnych kategoriach", results=results)
-
 
 def report_top_selling_events():
     query = """
@@ -577,12 +536,10 @@ def report_top_selling_events():
     """
     return fetch_query(query)
 
-
 @app.route('/report/top_selling_events')
 def report_top_selling_events_route():
     results = report_top_selling_events()
     return render_template('report.html', title="Najczęściej kupowane bilety w poszczególnych kategoriach", results=results)
-
 
 def report_most_rated_events():
     query = """
@@ -594,12 +551,10 @@ def report_most_rated_events():
     """
     return fetch_query(query)
 
-
 @app.route('/report/most_rated_events')
 def report_most_rated_events_route():
     results = report_most_rated_events()
     return render_template('report.html', title="Najczęściej oceniane wydarzenia", results=results)
-
 
 def report_event_revenue():
     query = """
@@ -612,12 +567,10 @@ def report_event_revenue():
     """
     return fetch_query(query)
 
-
 @app.route('/report/event_revenue')
 def report_event_revenue_route():
     results = report_event_revenue()
     return render_template('report.html', title="Suma wpływów z poszczególnych wydarzeń", results=results)
-
 
 def report_revenue_in_period(date_from, date_to):
     query = """
@@ -626,7 +579,6 @@ def report_revenue_in_period(date_from, date_to):
     WHERE P.DataPlatnosci BETWEEN %s AND %s;
     """
     return fetch_query(query, (date_from, date_to))
-
 
 @app.route('/report/revenue_in_period', methods=['GET', 'POST'])
 def report_revenue_in_period_route():
@@ -637,10 +589,8 @@ def report_revenue_in_period_route():
         results = report_revenue_in_period(date_from, date_to)
     return render_template('report_revenue_in_period.html', title="Suma wpływów z wydarzeń w danym okresie", results=results)
 
-
 def main():
     app.run(host='0.0.0.0', port=5000)
-
 
 if __name__ == '__main__':
     main()
