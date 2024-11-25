@@ -26,8 +26,11 @@ def create_connection():
         )
         if connection.is_connected():
             return connection
+        else:
+            print("Nie udało się nawiązać połączenia z bazą danych.")
+            return None
     except Error as e:
-        print(f"Error while connecting to MySQL: {e}")
+        print(f"Błąd podczas łączenia z MySQL: {e}")
         return None
 
 
@@ -36,18 +39,21 @@ def execute_query(query, params=()):
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return False
+    cursor = None
     try:
         cursor = connection.cursor()
         cursor.execute(query, params)
         connection.commit()
         return True
     except Error as e:
-        print(f"Error executing query: {e}")
+        print(f"Błąd podczas wykonywania zapytania: {e}")
         flash(f"Wystąpił błąd podczas wykonywania operacji. Szczegóły: {e}", 'danger')
         return False
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 def fetch_query(query, params=()):
@@ -55,18 +61,21 @@ def fetch_query(query, params=()):
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return []
+    cursor = None
     try:
         cursor = connection.cursor(dictionary=True)
         cursor.execute(query, params)
         result = cursor.fetchall()
         return result
     except Error as e:
-        print(f"Error fetching data: {e}")
+        print(f"Błąd podczas pobierania danych: {e}")
         flash("Wystąpił błąd podczas pobierania danych.", 'danger')
         return []
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 @app.route('/check_db')
@@ -142,7 +151,7 @@ def register():
                 flash("Zarejestrowano pomyślnie", 'success')
                 return redirect(url_for('login'))
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"Błąd: {e}")
                 flash(f"Wystąpił błąd podczas rejestracji. Szczegóły: {e}", 'danger')
 
     return render_template('register.html')
@@ -153,6 +162,7 @@ def add_event_with_check(nazwa, data, miejsce_id, opis, limit_miejsc, cena, orga
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return False
+    cursor = None
     try:
         cursor = connection.cursor()
         query_check = "SELECT COUNT(*) FROM Events WHERE Data = %s AND MiejsceID = %s"
@@ -168,12 +178,14 @@ def add_event_with_check(nazwa, data, miejsce_id, opis, limit_miejsc, cena, orga
             connection.commit()
             return True
     except Error as e:
-        print(f"Error adding event: {e}")
+        print(f"Błąd podczas dodawania wydarzenia: {e}")
         flash(f"Wystąpił błąd podczas dodawania wydarzenia. Szczegóły: {e}", 'danger')
         return False
     finally:
-        cursor.close()
-        connection.close()
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
 
 
 def delete_event(event_id):
@@ -319,7 +331,7 @@ def organizer_bookings():
         bookings = get_bookings_by_organizer(session['user']['UserID'])
         return render_template('organizer_bookings.html', bookings=bookings)
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Błąd: {e}")
         flash(f"Wystąpił błąd podczas pobierania danych. Szczegóły: {e}", 'danger')
         return render_template('organizer_bookings.html', bookings=[])
 
@@ -402,7 +414,7 @@ def book_event():
                 insert_ticket(user_id, event_id, status, znizka_id, final_price)
                 flash("Zarezerwowano pomyślnie", 'success')
             except Exception as e:
-                print(f"Error: {e}")
+                print(f"Błąd: {e}")
                 flash(f"Wystąpił błąd podczas wykonywania operacji. Szczegóły: {e}", 'danger')
     return render_template('book_event.html', events=events)
 
@@ -460,7 +472,7 @@ def make_payment_route():
             update_ticket_status(ticket_id, 'zakupiony')
             flash("Płatność zakończona pomyślnie", 'success')
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Błąd: {e}")
             flash(f"Wystąpił błąd podczas wykonywania płatności. Szczegóły: {e}", 'danger')
         return redirect(url_for('book_event'))
 
