@@ -1,8 +1,8 @@
 import decimal
 from datetime import datetime
 import configparser
-import mysql.connector
-from mysql.connector import Error
+import psycopg2
+import psycopg2.extras
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from decimal import Decimal
 
@@ -18,64 +18,65 @@ def load_config():
 
 def create_connection():
     try:
-        connection = mysql.connector.connect(
-            host="dev-mysql-primary.database.svc.cluster.local",
-            user="root",
-            password="admin",
-            database="dev_db"
+        connection = psycopg2.connect(
+            host="postgres.database.svc.cluster.local",
+            user="dev_user",
+            password="dev",
+            dbname="dev_db"
         )
-        if connection.is_connected():
-            return connection
-    except Error as e:
-        print(f"Error while connecting to MySQL: {e}")
+        return connection
+    except psycopg2.Error as e:
+        print(f"Error while connecting to PostgreSQL: {e}")
         return None
 
 
-def execute_stored_procedure(proc_name, params=()):
+def execute_function(func_name, params=()):
     connection = create_connection()
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return
     try:
         cursor = connection.cursor()
-        cursor.callproc(proc_name, params)
+        placeholders = ", ".join(["%s"] * len(params))
+        query = f"SELECT {func_name}({placeholders});" if params else f"SELECT {func_name}();"
+        cursor.execute(query, params)
         connection.commit()
-    except Error as e:
-        print(f"Error executing stored procedure {proc_name}: {e}")
+    except psycopg2.Error as e:
+        print(f"Error executing function {func_name}: {e}")
         flash(f"Wystąpił błąd podczas wykonywania operacji. Szczegóły: {e}", 'danger')
     finally:
         cursor.close()
         connection.close()
 
 
-def fetch_stored_procedure(proc_name, params=()):
+def fetch_function(func_name, params=()):
     connection = create_connection()
     if connection is None:
         flash("Nie udało się połączyć z bazą danych.", 'danger')
         return []
     try:
-        cursor = connection.cursor(dictionary=True)
-        cursor.callproc(proc_name, params)
-        result = []
-        for res in cursor.stored_results():
-            result.extend(res.fetchall())
+        cursor = connection.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        placeholders = ", ".join(["%s"] * len(params))
+        query = f"SELECT * FROM {func_name}({placeholders});" if params else f"SELECT * FROM {func_name}();"
+        cursor.execute(query, params)
+        result = cursor.fetchall()
         return result
-    except Error as e:
-        print(f"Error fetching stored procedure {proc_name}: {e}")
+    except psycopg2.Error as e:
+        print(f"Error fetching function {func_name}: {e}")
         flash("Wystąpił błąd podczas pobierania danych.", 'danger')
         return []
     finally:
         cursor.close()
         connection.close()
-        
+
+
 @app.route('/check_db')
 def check_db():
     try:
-        # Testowe połączenie z bazą danych
         connection = create_connection()
-        if connection and connection.is_connected():
+        if connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT 1")  # Proste zapytanie testowe
+            cursor.execute("SELECT 1;")
             result = cursor.fetchone()
             cursor.close()
             connection.close()
@@ -96,10 +97,10 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        user = fetch_stored_procedure('GetUser', (email, password))
+        user = fetch_function('GetUser', (email, password))
         if user:
             session['user'] = user[0]
-            flash(f"Zalogowano jako {user[0]['Rola']}", 'success')
+            flash(f"Zalogowano jako {user[0]['rola']}", 'success')
             return redirect(url_for('index'))
         else:
             flash("Nieprawidłowy email lub hasło", 'danger')
@@ -121,26 +122,23 @@ def register():
         email = request.form['email']
         haslo = request.form['haslo']
         data_urodzenia = request.form['data_urodzenia']
-        rola = 'klient'  # domyślna rola dla nowego użytkownika
-
+        rola = 'klient'
         if not (imie and nazwisko and email and haslo and data_urodzenia):
             flash("Wszystkie pola są wymagane", 'danger')
         else:
             try:
-                execute_stored_procedure('AddUser', (imie, nazwisko, email, haslo, rola, data_urodzenia))
+                execute_function('AddUser', (imie, nazwisko, email, haslo, rola, data_urodzenia))
                 flash("Zarejestrowano pomyślnie", 'success')
                 return redirect(url_for('login'))
             except Exception as e:
                 print(f"Error: {e}")
                 flash(f"Wystąpił błąd podczas rejestracji. Szczegóły: {e}", 'danger')
-
     return render_template('register.html')
-
 
 
 @app.route('/manage_events', methods=['GET', 'POST'])
 def manage_events():
-    if 'user' not in session or session['user']['Rola'] != 'administrator':
+    if 'user' not in session or session['user']['rola'] != 'administrator':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
     if request.method == 'POST':
@@ -152,18 +150,18 @@ def manage_events():
             opis = request.form['opis']
             limit_miejsc = request.form['limit_miejsc']
             cena = request.form['cena']
-            organizer_id = session['user']['UserID']
+            organizer_id = session['user']['userid']
             if not (nazwa and data and miejsce_id and opis and limit_miejsc and cena):
                 flash("Wszystkie pola są wymagane", 'danger')
             else:
                 try:
-                    execute_stored_procedure('AddEventWithCheck', (nazwa, data, miejsce_id, opis, limit_miejsc, cena, organizer_id))
+                    execute_function('AddEventWithCheck', (nazwa, data, miejsce_id, opis, limit_miejsc, cena, organizer_id))
                     flash("Wydarzenie dodane pomyślnie", 'success')
                 except Exception as e:
                     flash(f"Błąd: {str(e)}", 'danger')
         elif action == 'delete':
             event_id = request.form['event_id']
-            execute_stored_procedure('DeleteEvent', (event_id,))
+            execute_function('DeleteEvent', (event_id,))
             flash("Wydarzenie usunięte pomyślnie", 'success')
         elif action == 'update':
             event_id = request.form['event_id']
@@ -176,17 +174,17 @@ def manage_events():
             if not (nazwa and data and miejsce_id and opis and limit_miejsc and cena):
                 flash("Wszystkie pola są wymagane", 'danger')
             else:
-                execute_stored_procedure('UpdateEvent', (event_id, nazwa, data, miejsce_id, opis, limit_miejsc, cena))
+                execute_function('UpdateEvent', (event_id, nazwa, data, miejsce_id, opis, limit_miejsc, cena))
                 flash("Wydarzenie zaktualizowane pomyślnie", 'success')
-    events = fetch_stored_procedure('GetEvents')
-    locations = fetch_stored_procedure('GetLocations')
-    categories = fetch_stored_procedure('GetCategories')
+    events = fetch_function('GetEvents')
+    locations = fetch_function('GetLocations')
+    categories = fetch_function('GetCategories')
     return render_template('manage_events.html', events=events, locations=locations, categories=categories)
 
 
 @app.route('/organizer_dashboard')
 def organizer_dashboard():
-    if 'user' not in session or session['user']['Rola'] != 'organizator':
+    if 'user' not in session or session['user']['rola'] != 'organizator':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
     return render_template('organizer_dashboard.html')
@@ -194,7 +192,7 @@ def organizer_dashboard():
 
 @app.route('/organizer_events', methods=['GET', 'POST'])
 def organizer_events():
-    if 'user' not in session or session['user']['Rola'] != 'organizator':
+    if 'user' not in session or session['user']['rola'] != 'organizator':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
     if request.method == 'POST':
@@ -206,18 +204,18 @@ def organizer_events():
             opis = request.form['opis']
             limit_miejsc = request.form['limit_miejsc']
             cena = request.form['cena']
-            organizer_id = session['user']['UserID']
+            organizer_id = session['user']['userid']
             if not (nazwa and data and miejsce_id and opis and limit_miejsc and cena):
                 flash("Wszystkie pola są wymagane", 'danger')
             else:
                 try:
-                    execute_stored_procedure('AddEventWithCheck', (nazwa, data, miejsce_id, opis, limit_miejsc, cena, organizer_id))
+                    execute_function('AddEventWithCheck', (nazwa, data, miejsce_id, opis, limit_miejsc, cena, organizer_id))
                     flash("Wydarzenie dodane pomyślnie", 'success')
                 except Exception as e:
                     flash(f"Błąd: {str(e)}", 'danger')
         elif action == 'delete':
             event_id = request.form['event_id']
-            execute_stored_procedure('DeleteEvent', (event_id,))
+            execute_function('DeleteEvent', (event_id,))
             flash("Wydarzenie usunięte pomyślnie", 'success')
         elif action == 'update':
             event_id = request.form['event_id']
@@ -230,21 +228,21 @@ def organizer_events():
             if not (nazwa and data and miejsce_id and opis and limit_miejsc and cena):
                 flash("Wszystkie pola są wymagane", 'danger')
             else:
-                execute_stored_procedure('UpdateEvent', (event_id, nazwa, data, miejsce_id, opis, limit_miejsc, cena))
+                execute_function('UpdateEvent', (event_id, nazwa, data, miejsce_id, opis, limit_miejsc, cena))
                 flash("Wydarzenie zaktualizowane pomyślnie", 'success')
-    events = fetch_stored_procedure('GetEvents')
-    locations = fetch_stored_procedure('GetLocations')
-    categories = fetch_stored_procedure('GetCategories')
+    events = fetch_function('GetEvents')
+    locations = fetch_function('GetLocations')
+    categories = fetch_function('GetCategories')
     return render_template('organizer_events.html', events=events, locations=locations, categories=categories)
 
 
 @app.route('/organizer_bookings')
 def organizer_bookings():
-    if 'user' not in session or session['user']['Rola'] != 'organizator':
+    if 'user' not in session or session['user']['rola'] != 'organizator':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
     try:
-        bookings = fetch_stored_procedure('GetBookingsByOrganizer', (session['user']['UserID'],))
+        bookings = fetch_function('GetBookingsByOrganizer', (session['user']['userid'],))
         return render_template('organizer_bookings.html', bookings=bookings)
     except Exception as e:
         print(f"Error: {e}")
@@ -254,10 +252,11 @@ def organizer_bookings():
 
 @app.route('/organizer_profile', methods=['GET', 'POST'])
 def organizer_profile():
-    if 'user' not in session or session['user']['Rola'] != 'organizator':
+    if 'user' not in session or session['user']['rola'] != 'organizator':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
-    user = fetch_stored_procedure('GetUserById', (session['user']['UserID'],))[0]
+    user = fetch_function('GetUserById', (session['user']['userid'],))
+    user = user[0] if user else {}
     if request.method == 'POST':
         imie = request.form['imie']
         nazwisko = request.form['nazwisko']
@@ -266,7 +265,7 @@ def organizer_profile():
         if not (imie and nazwisko and email):
             flash("Wszystkie pola są wymagane", 'danger')
         else:
-            execute_stored_procedure('UpdateUser', (session['user']['UserID'], imie, nazwisko, email, haslo))
+            execute_function('UpdateUser', (session['user']['userid'], imie, nazwisko, email, haslo))
             flash("Profil zaktualizowany pomyślnie", 'success')
             return redirect(url_for('organizer_dashboard'))
     return render_template('organizer_profile.html', user=user)
@@ -274,12 +273,12 @@ def organizer_profile():
 
 @app.route('/book_event', methods=['GET', 'POST'])
 def book_event():
-    if 'user' not in session or session['user']['Rola'] != 'klient':
+    if 'user' not in session or session['user']['rola'] != 'klient':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
-    events = fetch_stored_procedure('GetEvents')
+    events = fetch_function('GetEvents')
     if request.method == 'POST':
-        user_id = session['user']['UserID']
+        user_id = session['user']['userid']
         event_id = request.form['event_id']
         status = 'aktywny'
         znizka_id = request.form.get('znizka_id')
@@ -287,13 +286,12 @@ def book_event():
             flash("UserID i EventID są wymagane", 'danger')
         else:
             try:
-                execute_stored_procedure('BookTicket', (user_id, event_id, status, znizka_id if znizka_id else None))
+                execute_function('BookTicket', (user_id, event_id, status, znizka_id if znizka_id else None))
                 flash("Zarezerwowano pomyślnie", 'success')
             except Exception as e:
                 print(f"Error: {e}")
                 flash(f"Wystąpił błąd podczas wykonywania operacji. Szczegóły: {e}", 'danger')
     return render_template('book_event.html', events=events)
-
 
 
 def calculate_discounted_price(price, birth_date):
@@ -305,12 +303,12 @@ def calculate_discounted_price(price, birth_date):
 
 @app.route('/make_payment', methods=['GET', 'POST'])
 def make_payment():
-    if 'user' not in session or session['user']['Rola'] != 'klient':
+    if 'user' not in session or session['user']['rola'] != 'klient':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
 
     if request.method == 'POST':
-        user_id = session['user']['UserID']
+        user_id = session['user']['userid']
         ticket_id = request.form['ticket_id']
         try:
             kwota = Decimal(request.form['kwota'])
@@ -319,46 +317,42 @@ def make_payment():
             return redirect(url_for('make_payment'))
         metoda_platnosci = request.form['metoda_platnosci']
 
-        # Pobierz szczegóły użytkownika
-        user_details = fetch_stored_procedure('GetUserDetails', (user_id,))
+        # Pobierz szczegóły użytkownika korzystając z funkcji GetUserById (zamiast GetUserDetails)
+        user_details = fetch_function('GetUserById', (user_id,))
         if not user_details:
             flash("Nie znaleziono szczegółów użytkownika", 'danger')
             return redirect(url_for('make_payment'))
 
-        birth_date = user_details[0]['DataUrodzenia']
-
-        # Oblicz cenę ze zniżką
+        # Przyjmujemy, że kolumna DataUrodzenia jest zapisana jako lowercase 'dataurodzenia'
+        birth_date = user_details[0]['dataurodzenia']
         final_price = calculate_discounted_price(kwota, birth_date)
 
         try:
-            execute_stored_procedure('MakePayment', (user_id, ticket_id, final_price, metoda_platnosci))
+            execute_function('MakePayment', (user_id, ticket_id, final_price, metoda_platnosci))
             flash("Płatność zakończona pomyślnie", 'success')
         except Exception as e:
             print(f"Error: {e}")
             flash(f"Wystąpił błąd podczas wykonywania płatności. Szczegóły: {e}", 'danger')
         return redirect(url_for('book_event'))
 
-    # Pobieranie biletów dla zalogowanego użytkownika
-    user_id = session['user']['UserID']
-    tickets = fetch_stored_procedure('GetTicketsByUser', (user_id,))
+    user_id = session['user']['userid']
+    tickets = fetch_function('GetTicketsByUser', (user_id,))
 
-    # Pobierz szczegóły użytkownika
-    user_details = fetch_stored_procedure('GetUserDetails', (user_id,))
+    user_details = fetch_function('GetUserById', (user_id,))
     if not user_details:
         flash("Nie znaleziono szczegółów użytkownika", 'danger')
         return redirect(url_for('book_event'))
-    birth_date = user_details[0]['DataUrodzenia']
+    birth_date = user_details[0]['dataurodzenia']
 
-    # Obliczanie cen ze zniżką
     for ticket in tickets:
-        if ticket['Cena'] is not None:
+        if ticket['base_price'] is not None:
             try:
-                ticket['FinalPrice'] = calculate_discounted_price(Decimal(ticket['Cena']), birth_date)
+                ticket['FinalPrice'] = calculate_discounted_price(Decimal(ticket['base_price']), birth_date)
             except Exception as e:
-                print(f"Error calculating discounted price for ticket {ticket['TicketID']}: {e}")
-                ticket['FinalPrice'] = ticket['Cena']
+                print(f"Error calculating discounted price for ticket {ticket['ticketid']}: {e}")
+                ticket['FinalPrice'] = ticket['base_price']
         else:
-            print(f"Warning: Ticket {ticket['TicketID']} has no price set (Cena is None).")
+            print(f"Warning: Ticket {ticket['ticketid']} has no price set (base_price is None).")
             ticket['FinalPrice'] = 'Brak ceny'
 
     return render_template('make_payment.html', tickets=tickets)
@@ -366,7 +360,7 @@ def make_payment():
 
 @app.route('/filter_events', methods=['GET', 'POST'])
 def filter_events():
-    if 'user' not in session or session['user']['Rola'] != 'klient':
+    if 'user' not in session or session['user']['rola'] != 'klient':
         flash("Brak dostępu", 'danger')
         return redirect(url_for('index'))
     events = []
@@ -382,8 +376,8 @@ def filter_events():
         price_min = request.form['price_min']
         price_max = request.form['price_max']
         available_only = request.form.get('available_only')
-        events = fetch_stored_procedure('FilterEvents', (category, f"%{city}%", f"%{country}%", date_from, date_to, capacity_min, capacity_max, f"%{seat_type}%", price_min, price_max, available_only))
-    categories = fetch_stored_procedure('GetCategories')
+        events = fetch_function('FilterEvents', (category, f"%{city}%", f"%{country}%", date_from, date_to, capacity_min, capacity_max, f"%{seat_type}%", price_min, price_max, available_only))
+    categories = fetch_function('GetCategories')
     return render_template('filter_events.html', events=events, categories=categories)
 
 
@@ -394,31 +388,31 @@ def reports():
 
 @app.route('/report/events_per_category')
 def report_events_per_category():
-    results = fetch_stored_procedure('ReportEventsPerCategory')
+    results = fetch_function('ReportEventsPerCategory')
     return render_template('report.html', title="Liczba wydarzeń w poszczególnych kategoriach", results=results)
 
 
 @app.route('/report/average_rating_per_category')
 def report_average_rating_per_category():
-    results = fetch_stored_procedure('ReportAverageRatingPerCategory')
+    results = fetch_function('ReportAverageRatingPerCategory')
     return render_template('report.html', title="Średnia ocena wydarzeń w poszczególnych kategoriach", results=results)
 
 
 @app.route('/report/top_selling_events')
 def report_top_selling_events():
-    results = fetch_stored_procedure('ReportTopSellingEvents')
+    results = fetch_function('ReportTopSellingEvents')
     return render_template('report.html', title="Najczęściej kupowane bilety w poszczególnych kategoriach", results=results)
 
 
 @app.route('/report/most_rated_events')
 def report_most_rated_events():
-    results = fetch_stored_procedure('ReportMostRatedEvents')
+    results = fetch_function('ReportMostRatedEvents')
     return render_template('report.html', title="Najczęściej oceniane wydarzenia", results=results)
 
 
 @app.route('/report/event_revenue')
 def report_event_revenue():
-    results = fetch_stored_procedure('ReportEventRevenue')
+    results = fetch_function('ReportEventRevenue')
     return render_template('report.html', title="Suma wpływów z poszczególnych wydarzeń", results=results)
 
 
@@ -428,9 +422,10 @@ def report_revenue_in_period():
     if request.method == 'POST':
         date_from = request.form['date_from']
         date_to = request.form['date_to']
-        results = fetch_stored_procedure('ReportRevenueInPeriod', (date_from, date_to))
+        results = fetch_function('ReportRevenueInPeriod', (date_from, date_to))
     return render_template('report_revenue_in_period.html', title="Suma wpływów z wydarzeń w danym okresie", results=results)
-    
+
+
 def main():
     app.run(host='0.0.0.0', port=5000)
 
